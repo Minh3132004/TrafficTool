@@ -1,0 +1,64 @@
+{
+  "users": [
+    {
+      "id": "user_seed_1793621690201_1",
+      "firstSeen": "2026-11-02",
+      "lastVisitedDate": "2026-11-03",
+      "visitCount": 3
+    },
+    {
+      "id": "user_seed_1793704538888_2",
+      "firstSeen": "2026-11-03",
+      "lastVisitedDate": "2026-11-03",
+      "visitCount": 2
+    },
+    {
+      "id": "user_seed_1793704538888_3",
+      "firstSeen": "2026-11-03",
+      "lastVisitedDate": "2026-11-03",
+      "visitCount": 2
+    },
+    {
+      "id": "user_seed_1793704538889_4",
+      "firstSeen": "2026-11-03",
+      "lastVisitedDate": "2026-11-03",
+      "visitCount": 2
+    },
+    {
+      "id": "user_seed_1793704538889_5",
+      "firstSeen": "2026-11-03",
+      "lastVisitedDate": "2026-11-03",
+      "visitCount": 2
+    },
+    {
+      "id": "user_seed_1793704538889_6",
+      "firstSeen": "2026-11-03",
+      "lastVisitedDate": "2026-11-03",
+      "visitCount": 2
+    },
+    {
+      "id": "user_seed_1793704538889_7",
+      "firstSeen": "2026-11-03",
+      "lastVisitedDate": "2026-11-03",
+      "visitCount": 2
+    },
+    {
+      "id": "user_seed_1793704538889_8",
+      "firstSeen": "2026-11-03",
+      "lastVisitedDate": "2026-11-03",
+      "visitCount": 2
+    },
+    {
+      "id": "user_seed_1793704538890_9",
+      "firstSeen": "2026-11-03",
+      "lastVisitedDate": "2026-11-03",
+      "visitCount": 2
+    },
+    {
+      "id": "user_seed_1793704538890_10",
+      "firstSeen": "2026-11-03",
+      "lastVisitedDate": "2026-11-03",
+      "visitCount": 2
+    }
+  ]
+}
