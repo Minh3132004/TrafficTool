@@ -1,0 +1,20 @@
+[
+  {
+    "name": "_ga",
+    "value": "GA1.1.616691482.1793753575",
+    "domain": ".mayacacoffeem4.com",
+    "path": "/",
+    "expires": 1828313575.32731,
+    "httpOnly": false,
+    "secure": false
+  },
+  {
+    "name": "_ga_HSSWQHGLL7",
+    "value": "GS2.1.s1793753575$o1$g1$t1793753592$j43$l0$h0",
+    "domain": ".mayacacoffeem4.com",
+    "path": "/",
+    "expires": 1828313592.107178,
+    "httpOnly": false,
+    "secure": false
+  }
+]

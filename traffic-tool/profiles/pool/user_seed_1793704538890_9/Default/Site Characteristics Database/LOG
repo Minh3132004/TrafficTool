@@ -1,2 +1,3 @@
-2026/11/03-18:18:27.958 8b28 Creating DB C:\Users\Minh\Downloads\traffic-tool\profiles\pool\user_seed_1793704538890_9\Default\Site Characteristics Database since it was missing.
-2026/11/03-18:18:27.989 8b28 Reusing MANIFEST C:\Users\Minh\Downloads\traffic-tool\profiles\pool\user_seed_1793704538890_9\Default\Site Characteristics Database/MANIFEST-000001
+2026/11/05-06:43:40.498 75dc Reusing MANIFEST C:\Users\ASUS\Downloads\TrafficTool\traffic-tool\profiles\pool\user_seed_1793704538890_9\Default\Site Characteristics Database/MANIFEST-000001
+2026/11/05-06:43:40.517 75dc Recovering log #6
+2026/11/05-06:43:40.517 75dc Reusing old log C:\Users\ASUS\Downloads\TrafficTool\traffic-tool\profiles\pool\user_seed_1793704538890_9\Default\Site Characteristics Database/000006.log 

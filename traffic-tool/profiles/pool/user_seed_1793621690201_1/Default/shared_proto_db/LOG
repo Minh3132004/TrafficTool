@@ -1,3 +1,2 @@
-2026/11/03-18:19:21.631 9670 Reusing MANIFEST C:\Users\Minh\Downloads\traffic-tool\profiles\pool\user_seed_1793621690201_1\Default\shared_proto_db/MANIFEST-000001
-2026/11/03-18:19:21.631 9670 Recovering log #3
-2026/11/03-18:19:21.632 9670 Reusing old log C:\Users\Minh\Downloads\traffic-tool\profiles\pool\user_seed_1793621690201_1\Default\shared_proto_db/000003.log 
+2026/11/05-06:50:35.949 64f8 Creating DB C:\Users\ASUS\Downloads\TrafficTool\traffic-tool\profiles\pool\user_seed_1793621690201_1\Default\shared_proto_db since it was missing.
+2026/11/05-06:50:35.960 64f8 Reusing MANIFEST C:\Users\ASUS\Downloads\TrafficTool\traffic-tool\profiles\pool\user_seed_1793621690201_1\Default\shared_proto_db/MANIFEST-000001

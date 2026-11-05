@@ -1,3 +1,2 @@
-2026/11/03-18:19:21.572 73e4 Reusing MANIFEST C:\Users\Minh\Downloads\traffic-tool\profiles\pool\user_seed_1793621690201_1\Default\Local Storage\leveldb/MANIFEST-000001
-2026/11/03-18:19:21.572 73e4 Recovering log #3
-2026/11/03-18:19:21.574 73e4 Reusing old log C:\Users\Minh\Downloads\traffic-tool\profiles\pool\user_seed_1793621690201_1\Default\Local Storage\leveldb/000003.log 
+2026/11/05-06:50:35.863 6290 Creating DB C:\Users\ASUS\Downloads\TrafficTool\traffic-tool\profiles\pool\user_seed_1793621690201_1\Default\Local Storage\leveldb since it was missing.
+2026/11/05-06:50:35.899 6290 Reusing MANIFEST C:\Users\ASUS\Downloads\TrafficTool\traffic-tool\profiles\pool\user_seed_1793621690201_1\Default\Local Storage\leveldb/MANIFEST-000001

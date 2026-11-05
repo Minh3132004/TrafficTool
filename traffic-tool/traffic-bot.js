@@ -151,43 +151,133 @@ class RollingPoolManager {
   }
 
   // Lưu một số khách mới của hôm nay vào Pool để làm Returning Users cho ngày mai/ngày sau
-  saveNewUserToPool(tempProfileDir) {
+  async saveNewUserToPool(tempProfileDir) {
     const today = getTodayStr();
     const newId = `user_${Date.now()}_${randomInt(1000, 9999)}`;
     const targetDir = path.join(this.poolDir, newId);
+    // Bỏ qua cache nặng / file khóa của Chrome, vẫn giữ Cookies (_ga) để GA4 nhận ra khách cũ
+    const SKIP = ['Cache', 'Code Cache', 'GPUCache', 'GrShaderCache', 'ShaderCache', 'Crashpad',
+      'lockfile', 'SingletonLock', 'SingletonCookie', 'SingletonSocket'];
 
-    try {
-      if (fs.existsSync(tempProfileDir)) {
-        // Đổi tên hoặc copy thư mục profile vào kho pool
-        fs.renameSync(tempProfileDir, targetDir);
-
-        const meta = this.getMeta();
-        meta.users.push({
-          id: newId,
-          firstSeen: today,
-          lastVisitedDate: today,
-          visitCount: 1
-        });
-
-        // Giới hạn kho tối đa 40 profile để không tốn dung lượng ổ cứng
-        if (meta.users.length > 40) {
-          const removed = meta.users.splice(0, meta.users.length - 40);
-          for (const r of removed) {
-            const p = path.join(this.poolDir, r.id);
-            if (fs.existsSync(p)) {
-              try { fs.rmSync(p, { recursive: true, force: true }); } catch (e) {}
-            }
-          }
+    let lastErr = null;
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      try {
+        if (!fs.existsSync(tempProfileDir)) {
+          lastErr = new Error('không thấy thư mục profile tạm');
+          break;
         }
-
-        this.saveMeta(meta);
-        return true;
+        fs.rmSync(targetDir, { recursive: true, force: true });
+        // COPY thay cho rename: rename hay bị Windows từ chối (EBUSY/EPERM) khi Chrome chưa nhả file
+        fs.cpSync(tempProfileDir, targetDir, {
+          recursive: true,
+          filter: (src) => !SKIP.includes(path.basename(src))
+        });
+        lastErr = null;
+        break;
+      } catch (e) {
+        lastErr = e;
+        await sleep(1500 * attempt);
       }
-    } catch (e) {
+    }
+
+    if (lastErr) {
+      console.log(`\n   ⚠️ Lưu profile vào Pool THẤT BẠI: ${lastErr.message}`);
+      try { fs.rmSync(targetDir, { recursive: true, force: true }); } catch (e) {}
       return false;
     }
+
+    const cookieFile = path.join(targetDir, 'Default', 'Network', 'Cookies');
+    if (!fs.existsSync(cookieFile)) {
+      console.log(`\n   ⚠️ Cảnh báo: profile ${newId} chưa có file Cookies, có thể không được tính là returning`);
+    }
+
+    const meta = this.getMeta();
+    meta.users.push({
+      id: newId,
+      firstSeen: today,
+      lastVisitedDate: today,
+      visitCount: 1
+    });
+
+    // Giới hạn kho tối đa 40 profile để không tốn dung lượng ổ cứng
+    if (meta.users.length > 40) {
+      const removed = meta.users.splice(0, meta.users.length - 40);
+      for (const r of removed) {
+        const rp = path.join(this.poolDir, r.id);
+        if (fs.existsSync(rp)) {
+          try { fs.rmSync(rp, { recursive: true, force: true }); } catch (e) {}
+        }
+      }
+    }
+
+    this.saveMeta(meta);
+    return true;
+  }
+}
+
+// ================= LƯU / NẠP COOKIE GA (để GA4 nhận ra khách cũ) =================
+const GA_COOKIE_FILE = 'ga_cookies.json';
+
+async function loadGaCookies(page, profileDir) {
+  try {
+    const f = path.join(profileDir, GA_COOKIE_FILE);
+    if (!fs.existsSync(f)) return 0;
+    const saved = JSON.parse(fs.readFileSync(f, 'utf8'));
+    if (Array.isArray(saved) && saved.length) {
+      await page.setCookie(...saved);
+      return saved.length;
+    }
+  } catch (e) {}
+  return 0;
+}
+
+async function saveGaCookies(page, profileDir) {
+  try {
+    let ga = [];
+    for (let i = 0; i < 6; i++) {
+      const all = await page.cookies(CONFIG.targetUrl);
+      ga = all.filter((c) => c.name.startsWith('_ga'));
+      if (ga.some((c) => c.name === '_ga')) break;
+      await sleep(500);
+    }
+    if (!ga.length) return false;
+    const slim = ga.map((c) => ({
+      name: c.name, value: c.value, domain: c.domain, path: c.path,
+      expires: c.expires, httpOnly: c.httpOnly, secure: c.secure, sameSite: c.sameSite
+    }));
+    fs.writeFileSync(path.join(profileDir, GA_COOKIE_FILE), JSON.stringify(slim, null, 2), 'utf8');
+    return true;
+  } catch (e) {
     return false;
   }
+}
+
+// Chế độ --export-cookies: mở từng profile trong kho, đọc cookie GA đang có rồi lưu ra file.
+// KHÔNG truy cập website nên không tạo thêm traffic.
+async function exportPoolCookies(chromeExe) {
+  const poolManager = new RollingPoolManager(path.join(__dirname, 'profiles'));
+  const users = poolManager.getMeta().users;
+  let ok = 0;
+  for (const u of users) {
+    const dir = path.join(poolManager.poolDir, u.id);
+    if (!fs.existsSync(dir)) continue;
+    let browser;
+    try {
+      browser = await puppeteer.launch({
+        executablePath: chromeExe, headless: 'new', userDataDir: dir,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--mute-audio']
+      });
+      const page = await browser.newPage();
+      const saved = await saveGaCookies(page, dir);
+      console.log(` ${saved ? '✅' : '❌ không có cookie GA'}  ${u.id}`);
+      if (saved) ok++;
+    } catch (e) {
+      console.log(` ❌ ${u.id}: ${e.message}`);
+    } finally {
+      if (browser) { try { await browser.close(); } catch (e) {} }
+    }
+  }
+  console.log(`\n Đã xuất cookie GA cho ${ok}/${users.length} profile.`);
 }
 
 // ================= HÀM MÔ PHỎNG PHIÊN DUYỆT WEB =================
@@ -215,6 +305,9 @@ async function simulateSession({ id, type, isActive, profileDir, executablePath,
     const page = await browser.newPage();
     await page.setUserAgent(device.userAgent);
     await page.setViewport(device.viewport);
+
+    // Nạp lại cookie GA đã lưu (nếu có) để GA4 coi đây là khách cũ
+    await loadGaCookies(page, profileDir);
 
     // Mở trang
     await page.goto(CONFIG.targetUrl, {
@@ -251,6 +344,7 @@ async function simulateSession({ id, type, isActive, profileDir, executablePath,
         await sleep((targetStaySeconds - elapsed) * 1000);
       }
 
+      await saveGaCookies(page, profileDir);
       const totalTime = Math.round((Date.now() - startTime) / 1000);
       return {
         id,
@@ -265,6 +359,7 @@ async function simulateSession({ id, type, isActive, profileDir, executablePath,
       const staySeconds = randomInt(3, 6);
       await sleep(staySeconds * 1000);
 
+      await saveGaCookies(page, profileDir);
       const totalTime = Math.round((Date.now() - startTime) / 1000);
       return {
         id,
@@ -310,6 +405,10 @@ async function main() {
 
   // Phân tích tham số dòng lệnh
   const args = process.argv.slice(2);
+  if (args.includes('--export-cookies')) {
+    await exportPoolCookies(chromeExe);
+    return;
+  }
   const isTestMode = args.includes('--test');
   const isHeadless = !args.includes('--no-headless');
 
@@ -384,6 +483,7 @@ async function main() {
   let successBounce = 0;
   let successReturning = 0;
   let successNew = 0;
+  let savedToPool = 0;
 
   const runWorker = async () => {
     while (tasks.length > 0) {
@@ -405,7 +505,8 @@ async function main() {
 
       // Nếu là khách mới được chọn để dành làm Returning User cho ngày mai -> nạp vào Pool
       if (task.saveToPool) {
-        poolManager.saveNewUserToPool(task.profileDir);
+        await sleep(1500); // chờ Chrome nhả file profile hẳn
+        if (await poolManager.saveNewUserToPool(task.profileDir)) savedToPool++;
       } else if (task.isTemp && fs.existsSync(task.profileDir)) {
         // Ngược lại thì xóa sạch thư mục tạm
         try {
@@ -446,7 +547,7 @@ async function main() {
   console.log(` - Khách cũ quay lại (Returning)     : ${successReturning}`);
   console.log(` - Khách tương tác (Active Users >10s): ${successActive}`);
   console.log(` - Khách thoát sớm (Bounce <10s)     : ${successBounce}`);
-  console.log(` - Đã lưu thêm vào Rolling Pool      : ${seedToPoolTarget} khách mới (sẽ quay lại vào ngày mai/mốt)`);
+  console.log(` - Đã lưu thêm vào Rolling Pool      : ${savedToPool}/${seedToPoolTarget} khách mới (sẽ quay lại vào ngày mai/mốt)`);
   console.log('================================================================');
   console.log(' Đã đồng bộ số liệu lên Google Analytics 4 & Microsoft Clarity!');
   console.log(' Số liệu Cohort Retention trên GA4 sẽ trông tự nhiên 100%.');
